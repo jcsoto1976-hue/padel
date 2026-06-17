@@ -68,5 +68,7 @@ if (process.env.DATABASE_URL && (process.env.DATABASE_URL.startsWith('postgres:/
   );
 }
 
+}
+
 module.exports = sequelize;
 
