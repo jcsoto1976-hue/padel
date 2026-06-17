@@ -1,4 +1,11 @@
 require('dotenv').config();
+const dns = require('dns');
+
+// Forzar a Node.js a preferir IPv4 sobre IPv6 para evitar errores ENETUNREACH en Render.com
+if (dns.setDefaultResultOrder) {
+  dns.setDefaultResultOrder('ipv4first');
+}
+
 const app = require('./app');
 
 const PORT = process.env.PORT || 4000;

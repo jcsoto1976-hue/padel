@@ -5,7 +5,7 @@ const dialect = process.env.DB_DIALECT || 'sqlite'; // Default to sqlite so it w
 
 let sequelize;
 
-if (process.env.DATABASE_URL) {
+if (process.env.DATABASE_URL && (process.env.DATABASE_URL.startsWith('postgres://') || process.env.DATABASE_URL.startsWith('postgresql://'))) {
   // Conexión directa por URL (Recomendado para Supabase en producción)
   sequelize = new Sequelize(process.env.DATABASE_URL, {
     dialect: 'postgres',
@@ -23,7 +23,11 @@ if (process.env.DATABASE_URL) {
       timestamps: true,
     },
   });
-} else if (dialect === 'sqlite') {
+} else {
+  if (process.env.DATABASE_URL) {
+    console.error('❌ Error: DATABASE_URL se ha detectado pero no tiene un formato válido (debe empezar con postgres:// o postgresql://).');
+  }
+  if (dialect === 'sqlite') {
   sequelize = new Sequelize({
     dialect: 'sqlite',
     storage: path.join(__dirname, '..', '..', 'padel_club.sqlite'),
