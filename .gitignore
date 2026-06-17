@@ -1,0 +1,31 @@
+# Node dependencies
+node_modules/
+**/node_modules/
+
+# Environment configurations (contains API keys, passwords, VAPID keys)
+.env
+**/.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Databases
+*.sqlite
+*.sqlite3
+**/padel_club.sqlite
+
+# Build directories
+dist/
+**/dist/
+build/
+**/build/
+.cache/
+
+# Debug and system logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
+Thumbs.db
+*.log

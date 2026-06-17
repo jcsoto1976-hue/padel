@@ -1,0 +1,31 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: padel_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: padel_club
+      POSTGRES_USER: padel_user
+      POSTGRES_PASSWORD: padel_pass_2024
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/migrations/001_initial.sql:/docker-entrypoint-initdb.d/001_initial.sql
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: padel_pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@padel.club
+      PGADMIN_DEFAULT_PASSWORD: Admin1234!
+    ports:
+      - '5050:80'
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:
