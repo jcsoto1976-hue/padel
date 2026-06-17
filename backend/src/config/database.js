@@ -15,6 +15,10 @@ if (process.env.DATABASE_URL && (process.env.DATABASE_URL.startsWith('postgres:/
         require: true,
         rejectUnauthorized: false, // Requerido por proveedores como Supabase
       },
+      // Resolver DNS forzando IPv4 (family 4) para evitar fallos ENETUNREACH de IPv6 en Render
+      lookup: (hostname, options, callback) => {
+        require('dns').lookup(hostname, Object.assign({}, options, { family: 4 }), callback);
+      },
     },
     logging: process.env.NODE_ENV === 'development' ? console.log : false,
     timezone: '+01:00',
@@ -28,47 +32,49 @@ if (process.env.DATABASE_URL && (process.env.DATABASE_URL.startsWith('postgres:/
     console.error('❌ Error: DATABASE_URL se ha detectado pero no tiene un formato válido (debe empezar con postgres:// o postgresql://).');
   }
   if (dialect === 'sqlite') {
-  sequelize = new Sequelize({
-    dialect: 'sqlite',
-    storage: path.join(__dirname, '..', '..', 'padel_club.sqlite'),
-    logging: process.env.NODE_ENV === 'development' ? console.log : false,
-    define: {
-      underscored: true,
-      timestamps: true,
-    },
-  });
-} else {
-  sequelize = new Sequelize(
-    process.env.DB_NAME || 'padel_club',
-    process.env.DB_USER || 'padel_user',
-    process.env.DB_PASSWORD || 'padel_pass_2024',
-    {
-      host: process.env.DB_HOST || 'localhost',
-      port: parseInt(process.env.DB_PORT) || 5432,
-      dialect: 'postgres',
-      dialectOptions: {
-        ssl: {
-          require: true,
-          rejectUnauthorized: false,
-        },
-      },
+    sequelize = new Sequelize({
+      dialect: 'sqlite',
+      storage: path.join(__dirname, '..', '..', 'padel_club.sqlite'),
       logging: process.env.NODE_ENV === 'development' ? console.log : false,
-      timezone: '+01:00',
-      pool: {
-        max: 10,
-        min: 0,
-        acquire: 30000,
-        idle: 10000,
-      },
       define: {
         underscored: true,
         timestamps: true,
       },
-    }
-  );
-}
-
+    });
+  } else {
+    sequelize = new Sequelize(
+      process.env.DB_NAME || 'padel_club',
+      process.env.DB_USER || 'padel_user',
+      process.env.DB_PASSWORD || 'padel_pass_2024',
+      {
+        host: process.env.DB_HOST || 'localhost',
+        port: parseInt(process.env.DB_PORT) || 5432,
+        dialect: 'postgres',
+        dialectOptions: {
+          ssl: {
+            require: true,
+            rejectUnauthorized: false,
+          },
+          // Resolver DNS forzando IPv4 (family 4) para evitar fallos ENETUNREACH de IPv6 en Render
+          lookup: (hostname, options, callback) => {
+            require('dns').lookup(hostname, Object.assign({}, options, { family: 4 }), callback);
+          },
+        },
+        logging: process.env.NODE_ENV === 'development' ? console.log : false,
+        timezone: '+01:00',
+        pool: {
+          max: 10,
+          min: 0,
+          acquire: 30000,
+          idle: 10000,
+        },
+        define: {
+          underscored: true,
+          timestamps: true,
+        },
+      }
+    );
+  }
 }
 
 module.exports = sequelize;
-
