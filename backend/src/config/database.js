@@ -5,7 +5,25 @@ const dialect = process.env.DB_DIALECT || 'sqlite'; // Default to sqlite so it w
 
 let sequelize;
 
-if (dialect === 'sqlite') {
+if (process.env.DATABASE_URL) {
+  // Conexión directa por URL (Recomendado para Supabase en producción)
+  sequelize = new Sequelize(process.env.DATABASE_URL, {
+    dialect: 'postgres',
+    protocol: 'postgres',
+    dialectOptions: {
+      ssl: {
+        require: true,
+        rejectUnauthorized: false, // Requerido por proveedores como Supabase
+      },
+    },
+    logging: process.env.NODE_ENV === 'development' ? console.log : false,
+    timezone: '+01:00',
+    define: {
+      underscored: true,
+      timestamps: true,
+    },
+  });
+} else if (dialect === 'sqlite') {
   sequelize = new Sequelize({
     dialect: 'sqlite',
     storage: path.join(__dirname, '..', '..', 'padel_club.sqlite'),
@@ -24,14 +42,14 @@ if (dialect === 'sqlite') {
       host: process.env.DB_HOST || 'localhost',
       port: parseInt(process.env.DB_PORT) || 5432,
       dialect: 'postgres',
-      logging: process.env.NODE_ENV === 'development' ? console.log : false,
-      timezone: '+01:00',
       dialectOptions: {
         ssl: {
           require: true,
           rejectUnauthorized: false,
         },
       },
+      logging: process.env.NODE_ENV === 'development' ? console.log : false,
+      timezone: '+01:00',
       pool: {
         max: 10,
         min: 0,
