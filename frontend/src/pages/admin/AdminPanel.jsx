@@ -3,11 +3,36 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import api from '../../services/api'
 import toast from 'react-hot-toast'
+import AdminCash from './AdminCash'
+import AdminSeasons from './AdminSeasons'
 
 // ─── Vista principal admin ────────────────────────────────────────────────────
 function AdminOverview() {
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
+  const [showModal, setShowModal] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [form, setForm] = useState({
+    name: '',
+    phone: '',
+    password: 'Padel1234!',
+    role: 'jugador',
+    level: '6ta_B',
+    elo_rating: 1000,
+    gender: 'H'
+  })
+
+  const levelLabels = {
+    '6ta_A': '6ª A',
+    '6ta_B': '6ª B',
+    '5ta_A': '5ª A',
+    '5ta_B': '5ª B',
+    '4ta_A': '4ª A',
+    '4ta_B': '4ª B',
+    '3ra_A': '3ª A',
+    '3ra_B': '3ª B',
+    'mixto': 'Mixto'
+  }
 
   useEffect(() => {
     api.get('/admin/users').then(({ data }) => {
@@ -25,20 +50,54 @@ function AdminOverview() {
     }
   }
 
+  const handleCreateUser = async (e) => {
+    e.preventDefault()
+    setSubmitting(true)
+    try {
+      const { data } = await api.post('/admin/users', form)
+      setUsers(prev => [data.user, ...prev])
+      toast.success('¡Usuario creado con éxito! 👥')
+      setShowModal(false)
+      setForm({
+        name: '',
+        phone: '',
+        password: 'Padel1234!',
+        role: 'jugador',
+        level: '6ta_B',
+        elo_rating: 1000,
+        gender: 'H'
+      })
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Error al crear usuario')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   return (
     <div>
-      <h2 className="section-title mb-1">Gestión de Usuarios</h2>
-      <p className="section-subtitle mb-6">Administra los roles y permisos de los jugadores</p>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div>
+          <h2 className="section-title mb-1">Gestión de Usuarios</h2>
+          <p className="section-subtitle">Administra los roles y permisos de los jugadores</p>
+        </div>
+        <button
+          onClick={() => setShowModal(true)}
+          className="btn-primary flex items-center gap-1.5 text-sm"
+        >
+          ➕ Crear Nuevo Usuario
+        </button>
+      </div>
 
       {loading ? (
         <div className="space-y-2">{[1,2,3].map(i => <div key={i} className="skeleton h-14 rounded-xl" />)}</div>
       ) : (
-        <div className="table-wrapper">
+        <div className="table-wrapper animate-fade-in">
           <table className="table">
             <thead>
               <tr>
                 <th>Jugador</th>
-                <th>Email</th>
+                <th>Teléfono</th>
                 <th>Nivel</th>
                 <th>ELO</th>
                 <th>Partidos</th>
@@ -48,15 +107,15 @@ function AdminOverview() {
             </thead>
             <tbody>
               {users.map(u => (
-                <tr key={u.id}>
+                <tr key={u.id} className="hover:bg-slate-800/10">
                   <td>
                     <div className="flex items-center gap-2">
                       <div className="avatar w-8 h-8 text-xs">{u.name.charAt(0)}</div>
                       <span className="font-semibold text-sm text-slate-200">{u.name}</span>
                     </div>
                   </td>
-                  <td className="text-slate-400 text-sm">{u.email}</td>
-                  <td><span className={`level-${u.level} capitalize`}>{u.level}</span></td>
+                  <td className="text-slate-400 text-sm">{u.phone}</td>
+                  <td><span className={`level-${u.level} text-xs px-2 py-0.5 rounded-full font-semibold bg-slate-800 text-slate-300 border border-slate-700`}>{levelLabels[u.level] || u.level}</span></td>
                   <td className="font-bold text-brand-400">{u.elo_rating}</td>
                   <td className="text-slate-400 text-sm">{u.total_matches}</td>
                   <td>
@@ -81,6 +140,187 @@ function AdminOverview() {
           </table>
         </div>
       )}
+
+      {/* Modal Crear Usuario */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 animate-fade-in">
+          <div className="bg-slate-900 border border-slate-800 w-full max-w-md rounded-2xl p-6 shadow-2xl relative animate-scale-in">
+            <h3 className="text-lg font-bold text-white mb-4">➕ Registrar Nuevo Usuario</h3>
+            
+            <form onSubmit={handleCreateUser} className="space-y-4">
+              <div>
+                <label className="label text-xs">Nombre Completo</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ej. Juan Pérez"
+                  className="input text-sm"
+                  value={form.name}
+                  onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
+                />
+              </div>
+
+              <div>
+                <label className="label text-xs">Teléfono / Usuario de Acceso</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ej. 600000021"
+                  className="input text-sm"
+                  value={form.phone}
+                  onChange={e => setForm(p => ({ ...p, phone: e.target.value }))}
+                />
+              </div>
+
+              <div>
+                <label className="label text-xs">Contraseña de Acceso</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="••••••••"
+                  className="input text-sm"
+                  value={form.password}
+                  onChange={e => setForm(p => ({ ...p, password: e.target.value }))}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="label text-xs">Rol</label>
+                  <select
+                    className="input text-sm"
+                    value={form.role}
+                    onChange={e => setForm(p => ({ ...p, role: e.target.value }))}
+                  >
+                    <option value="jugador">Jugador</option>
+                    <option value="entrenador">Entrenador</option>
+                    <option value="admin">Administrador</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="label text-xs">Nivel inicial</label>
+                  <select
+                    className="input text-sm"
+                    value={form.level}
+                    onChange={e => setForm(p => ({ ...p, level: e.target.value }))}
+                  >
+                    <option value="6ta_B">6ª B</option>
+                    <option value="6ta_A">6ª A</option>
+                    <option value="5ta_B">5ª B</option>
+                    <option value="5ta_A">5ª A</option>
+                    <option value="4ta_B">4ª B</option>
+                    <option value="4ta_A">4ª A</option>
+                    <option value="3ra_B">3ª B</option>
+                    <option value="3ra_A">3ª A</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="label text-xs">Género</label>
+                  <select
+                    className="input text-sm"
+                    value={form.gender}
+                    onChange={e => setForm(p => ({ ...p, gender: e.target.value }))}
+                  >
+                    <option value="H">Hombre ♂</option>
+                    <option value="M">Mujer ♀</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="label text-xs">Puntaje ELO Inicial (Opcional)</label>
+                  <input
+                    type="number"
+                    min="100"
+                    max="3000"
+                    className="input text-sm"
+                    value={form.elo_rating}
+                    onChange={e => setForm(p => ({ ...p, elo_rating: e.target.value }))}
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-xl border border-slate-700 transition-all text-sm"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="flex-1 py-2.5 bg-brand-500 hover:bg-brand-400 text-slate-950 font-bold rounded-xl transition-all text-sm disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {submitting ? (
+                    <>
+                      <span className="w-4 h-4 border-2 border-slate-950/30 border-t-slate-950 rounded-full animate-spin" />
+                      Creando...
+                    </>
+                  ) : (
+                    'Crear Usuario'
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* Código QR de Acceso para Jugadores */}
+      <div className="card border border-brand-500/20 bg-slate-900/40 mt-8 max-w-md mx-auto sm:mx-0">
+        <div className="flex items-center gap-2 mb-3">
+          <span className="text-xl">📱</span>
+          <h3 className="font-bold text-white text-sm uppercase tracking-wider">Código QR de Acceso</h3>
+        </div>
+        <p className="text-xs text-slate-400 mb-4">
+          Imprime este código y colócalo en tu club para que los jugadores se registren o inicien sesión al instante escaneándolo con su móvil.
+        </p>
+        <div className="flex flex-col items-center gap-4 bg-slate-950/40 p-4 rounded-xl border border-slate-800">
+          <img 
+            src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(window.location.origin + '/login')}`}
+            alt="Código QR de Acceso"
+            className="w-[180px] h-[180px] rounded-lg border border-slate-700 bg-white p-2"
+          />
+          <div className="text-center w-full">
+            <div className="text-[11px] text-slate-400 font-mono select-all bg-slate-900/60 py-1.5 px-2.5 rounded-lg border border-slate-800/80 truncate mb-3">
+              {window.location.origin + '/login'}
+            </div>
+            <button 
+              onClick={() => {
+                const printWindow = window.open('', '_blank');
+                printWindow.document.write(`
+                  <html>
+                    <head>
+                      <title>Imprimir QR de Acceso - PADEL Club</title>
+                      <style>
+                        body { font-family: sans-serif; text-align: center; padding: 50px; background-color: #ffffff; color: #000000; }
+                        h1 { font-size: 32px; margin-bottom: 5px; color: #10b981; }
+                        p { font-size: 18px; color: #555555; margin-bottom: 40px; }
+                        img { width: 320px; border: 2px solid #eaeaea; padding: 15px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+                        .url { margin-top: 30px; font-family: monospace; font-size: 20px; color: #222222; font-weight: bold; }
+                        .footer { margin-top: 50px; font-size: 12px; color: #999; }
+                      </style>
+                    </head>
+                    <body onload="window.print(); window.close();">
+                      <h1>🎾 PADEL CLUB 🎾</h1>
+                      <p>Escanea este código QR para reservar pistas, registrar resultados y ver clasificaciones.</p>
+                      <img src="https://api.qrserver.com/v1/create-qr-code/?size=350x350&data=${encodeURIComponent(window.location.origin + '/login')}" />
+                      <div class="url">${window.location.origin + '/login'}</div>
+                      <div class="footer">Generado automáticamente por el Sistema de Gestión Deportiva Padel Club</div>
+                    </body>
+                  </html>
+                `);
+                printWindow.document.close();
+              }}
+              className="btn-outline text-xs w-full py-2 flex items-center justify-center gap-1.5"
+            >
+              🖨️ Imprimir Cartel QR
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
@@ -179,6 +419,8 @@ export default function AdminPanel() {
   const tabs = [
     { to: '/admin', label: '👥 Usuarios', exact: true },
     { to: '/admin/pistas', label: '🏟️ Pistas' },
+    { to: '/admin/caja', label: '💰 Caja y Arqueo' },
+    { to: '/admin/temporadas', label: '🏆 Temporadas' },
   ]
 
   return (
@@ -218,6 +460,8 @@ export default function AdminPanel() {
       <Routes>
         <Route index element={<AdminOverview />} />
         <Route path="pistas" element={<AdminCourts />} />
+        <Route path="caja" element={<AdminCash />} />
+        <Route path="temporadas" element={<AdminSeasons />} />
       </Routes>
     </div>
   )

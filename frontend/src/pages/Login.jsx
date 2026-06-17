@@ -6,7 +6,7 @@ import toast from 'react-hot-toast'
 export default function Login() {
   const { login } = useAuth()
   const navigate = useNavigate()
-  const [form, setForm] = useState({ email: '', password: '' })
+  const [form, setForm] = useState({ phone: '', password: '' })
   const [loading, setLoading] = useState(false)
 
   const handleChange = (e) => setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
@@ -15,7 +15,7 @@ export default function Login() {
     e.preventDefault()
     setLoading(true)
     try {
-      await login(form.email, form.password)
+      await login(form.phone, form.password)
       toast.success('¡Bienvenido de vuelta!')
       navigate('/dashboard')
     } catch (err) {
@@ -41,17 +41,17 @@ export default function Login() {
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label htmlFor="email" className="label">Email</label>
+              <label htmlFor="phone" className="label">Teléfono</label>
               <input
-                id="email"
-                name="email"
-                type="email"
-                value={form.email}
+                id="phone"
+                name="phone"
+                type="tel"
+                value={form.phone}
                 onChange={handleChange}
-                placeholder="tu@email.com"
+                placeholder="Número de teléfono"
                 className="input"
                 required
-                autoComplete="email"
+                autoComplete="tel"
               />
             </div>
 
@@ -86,14 +86,7 @@ export default function Login() {
             </button>
           </form>
 
-          {/* Demo credentials */}
-          <div className="mt-6 p-4 bg-slate-800/50 rounded-xl border border-slate-700/30">
-            <p className="text-xs text-slate-400 font-semibold mb-2 uppercase tracking-wider">Credenciales de demo</p>
-            <div className="space-y-1 text-xs text-slate-500">
-              <div><span className="text-slate-400">Admin:</span> admin@padel.club / Admin1234!</div>
-              <div><span className="text-slate-400">Jugador:</span> lucia@padel.club / Padel1234!</div>
-            </div>
-          </div>
+
 
           <p className="text-center text-sm text-slate-400 mt-6">
             ¿No tienes cuenta?{' '}

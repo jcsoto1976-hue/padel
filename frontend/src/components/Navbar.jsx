@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext'
 const NAV_ITEMS = [
   { to: '/dashboard',  label: 'Dashboard',  icon: '🏠' },
   { to: '/reservas',   label: 'Reservas',   icon: '📅' },
+  { to: '/partidos-abiertos', label: 'Partidos Abiertos', icon: '🤝' },
   { to: '/quedadas',   label: 'Quedadas',   icon: '🎾' },
   { to: '/ranking',    label: 'Ranking',    icon: '🏆' },
   { to: '/torneos',    label: 'Torneos',    icon: '🥇' },
@@ -16,6 +17,27 @@ export default function Navbar() {
   const navigate = useNavigate()
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [deferredPrompt, setDeferredPrompt] = useState(null)
+
+  useEffect(() => {
+    const handleBeforeInstall = (e) => {
+      e.preventDefault()
+      setDeferredPrompt(e)
+    }
+    window.addEventListener('beforeinstallprompt', handleBeforeInstall)
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstall)
+  }, [])
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return
+    deferredPrompt.prompt()
+    const { outcome } = await deferredPrompt.userChoice
+    if (outcome === 'accepted') {
+      setDeferredPrompt(null)
+    }
+  }
+
+  const visibleItems = user?.role === 'admin' ? NAV_ITEMS : NAV_ITEMS.filter(item => item.to !== '/reservas')
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20)
@@ -52,7 +74,7 @@ export default function Navbar() {
           {/* Nav links — desktop */}
           {user && (
             <div className="hidden md:flex items-center gap-1">
-              {NAV_ITEMS.map(({ to, label, icon }) => (
+              {visibleItems.map(({ to, label, icon }) => (
                 <Link
                   key={to}
                   to={to}
@@ -83,6 +105,14 @@ export default function Navbar() {
 
           {/* Right actions */}
           <div className="flex items-center gap-3">
+            {deferredPrompt && (
+              <button
+                onClick={handleInstallClick}
+                className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-brand-500 text-slate-950 hover:bg-brand-400 transition-all shadow-md shadow-brand-500/10 cursor-pointer"
+              >
+                <span>📱</span> Instalar App
+              </button>
+            )}
             {user ? (
               <div className="flex items-center gap-2">
                 <Link
@@ -131,7 +161,7 @@ export default function Navbar() {
       {/* Mobile menu */}
       {menuOpen && user && (
         <div className="md:hidden glass border-t border-white/5 px-4 py-4 space-y-1 animate-fade-in">
-          {NAV_ITEMS.map(({ to, label, icon }) => (
+          {visibleItems.map(({ to, label, icon }) => (
             <Link
               key={to}
               to={to}
@@ -147,6 +177,14 @@ export default function Navbar() {
             <Link to="/admin" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-300 hover:bg-white/5">
               <span>⚙️</span> Admin
             </Link>
+          )}
+          {deferredPrompt && (
+            <button
+              onClick={handleInstallClick}
+              className="w-full text-left flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium text-brand-400 bg-brand-500/10 hover:bg-brand-500/20 border border-brand-500/25 mt-2 cursor-pointer"
+            >
+              <span>📱</span> Instalar PWA
+            </button>
           )}
           <button
             onClick={handleLogout}

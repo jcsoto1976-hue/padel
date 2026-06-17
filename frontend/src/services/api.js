@@ -20,6 +20,8 @@ api.interceptors.response.use(
     if (err.response?.status === 401) {
       localStorage.removeItem('padel_token')
       window.location.href = '/login'
+    } else if (err.response?.status === 402 && err.response?.data?.error === 'TRIAL_EXPIRED') {
+      window.location.href = '/trial-expired'
     }
     return Promise.reject(err)
   }

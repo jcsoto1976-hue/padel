@@ -15,9 +15,40 @@ import Ranking from './pages/Ranking'
 import Profile from './pages/Profile'
 import Torneos from './pages/Torneos'
 import TorneoDetail from './pages/TorneoDetail'
+import TorneoMonitor from './pages/TorneoMonitor'
 import AdminPanel from './pages/admin/AdminPanel'
+import AdminNewTournament from './pages/admin/AdminNewTournament'
+import OpenMatches from './pages/OpenMatches'
+import TrialExpired from './pages/TrialExpired'
+import { useEffect } from 'react'
+import api from './services/api'
 
 export default function App() {
+  useEffect(() => {
+    if ('serviceWorker' in navigator && 'PushManager' in window) {
+      navigator.serviceWorker.register('/sw.js')
+        .then(reg => {
+          api.get('/notifications/key').then(({ data }) => {
+            const pubKey = data.publicKey;
+            if (pubKey) {
+              reg.pushManager.getSubscription().then(sub => {
+                if (!sub) {
+                  reg.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: pubKey
+                  }).then(newSub => {
+                    const pNewSub = JSON.parse(JSON.stringify(newSub));
+                    api.post('/notifications/subscribe', { subscription: pNewSub }).catch(console.error);
+                  }).catch(console.error);
+                }
+              });
+            }
+          }).catch(console.error);
+        })
+        .catch(console.error);
+    }
+  }, []);
+
   return (
     <AuthProvider>
       <div className="min-h-screen flex flex-col">
@@ -28,21 +59,25 @@ export default function App() {
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/trial-expired" element={<TrialExpired />} />
 
             {/* Protegidas */}
             <Route element={<ProtectedRoute />}>
               <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/reservas" element={<Reservas />} />
               <Route path="/quedadas" element={<Quedadas />} />
               <Route path="/quedadas/:id" element={<QuedadaDetail />} />
               <Route path="/ranking" element={<Ranking />} />
               <Route path="/perfil/:id" element={<Profile />} />
               <Route path="/torneos" element={<Torneos />} />
+              <Route path="/torneos/:id/monitor" element={<TorneoMonitor />} />
               <Route path="/torneos/:id" element={<TorneoDetail />} />
+              <Route path="/partidos-abiertos" element={<OpenMatches />} />
             </Route>
 
             {/* Admin */}
             <Route element={<ProtectedRoute requiredRole="admin" />}>
+              <Route path="/reservas" element={<Reservas />} />
+              <Route path="/admin/torneos/nuevo" element={<AdminNewTournament />} />
               <Route path="/admin/*" element={<AdminPanel />} />
             </Route>
 

@@ -58,11 +58,6 @@ export default function Footer() {
           <p className="text-slate-500 text-xs">
             © {new Date().getFullYear()} PADEL Club Manager. Todos los derechos reservados.
           </p>
-          <div className="flex items-center gap-1 text-xs text-slate-500">
-            <span>Hecho con</span>
-            <span className="text-red-400">❤️</span>
-            <span>para jugadores de pádel</span>
-          </div>
         </div>
       </div>
     </footer>

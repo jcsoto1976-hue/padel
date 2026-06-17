@@ -23,8 +23,8 @@ export function AuthProvider({ children }) {
 
   useEffect(() => { loadUser() }, [loadUser])
 
-  const login = async (email, password) => {
-    const { data } = await api.post('/auth/login', { email, password })
+  const login = async (phone, password) => {
+    const { data } = await api.post('/auth/login', { phone, password })
     localStorage.setItem('padel_token', data.token)
     setUser(data.user)
     return data

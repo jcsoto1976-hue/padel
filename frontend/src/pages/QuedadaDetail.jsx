@@ -10,6 +10,22 @@ export default function QuedadaDetail() {
   const [quedada, setQuedada] = useState(null)
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
+  
+  const [newParticipantPhone, setNewParticipantPhone] = useState('')
+  const [addingParticipant, setAddingParticipant] = useState(false)
+  const [deletingQuedada, setDeletingQuedada] = useState(false)
+
+  const levelLabels = {
+    '6ta_A': '6ª A',
+    '6ta_B': '6ª B',
+    '5ta_A': '5ª A',
+    '5ta_B': '5ª B',
+    '4ta_A': '4ª A',
+    '4ta_B': '4ª B',
+    '3ra_A': '3ª A',
+    '3ra_B': '3ª B',
+    'mixto': 'Mixto'
+  }
 
   const fetchQuedada = async () => {
     try {
@@ -20,6 +36,46 @@ export default function QuedadaDetail() {
   }
 
   useEffect(() => { fetchQuedada() }, [id])
+
+  const handleAddParticipant = async (e) => {
+    e.preventDefault()
+    if (!newParticipantPhone) return
+    setAddingParticipant(true)
+    try {
+      await api.post(`/quedadas/${id}/participants`, { user_id: newParticipantPhone })
+      toast.success('¡Jugador añadido!')
+      setNewParticipantPhone('')
+      fetchQuedada()
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Error al añadir jugador')
+    } finally {
+      setAddingParticipant(false)
+    }
+  }
+
+  const handleRemoveParticipant = async (userId) => {
+    if (!confirm('¿Seguro que quieres eliminar a este jugador de la quedada?')) return
+    try {
+      await api.delete(`/quedadas/${id}/participants/${userId}`)
+      toast.success('Jugador eliminado')
+      fetchQuedada()
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Error al eliminar jugador')
+    }
+  }
+
+  const handleDeleteQuedada = async () => {
+    if (!confirm('¿Seguro que quieres eliminar por completo esta quedada?')) return
+    setDeletingQuedada(true)
+    try {
+      await api.delete(`/quedadas/${id}`)
+      toast.success('Quedada eliminada')
+      window.location.href = '/quedadas'
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Error al eliminar quedada')
+      setDeletingQuedada(false)
+    }
+  }
 
   const handleGenerate = async () => {
     if (!confirm('¿Generar los emparejamientos? Esto organizará los partidos de la jornada.')) return
@@ -73,6 +129,73 @@ export default function QuedadaDetail() {
   const isCreator = quedada.creator_id === user?.id
   const isAdmin = user?.role === 'admin'
 
+  // Calcular clasificación de la quedada
+  const getQuedadaLeaderboard = () => {
+    const leaderboardMap = {};
+    
+    // Inicializar todos los participantes activos
+    activeParts.forEach(p => {
+      leaderboardMap[p.user_id] = {
+        user_id: p.user_id,
+        name: p.user?.name,
+        level: p.user?.level,
+        elo: p.user?.elo_rating,
+        matchesPlayed: 0,
+        wins: 0,
+        losses: 0,
+        gamesWon: 0,
+        gamesLost: 0,
+      };
+    });
+
+    // Sumar estadísticas de partidos confirmados
+    (quedada.matches || []).forEach(m => {
+      if (m.status === 'confirmed' && m.result) {
+        const resObj = m.result;
+        const scoreA = resObj.score_a ? resObj.score_a.split('-').map(Number) : [0, 0];
+        const scoreB = resObj.score_b ? resObj.score_b.split('-').map(Number) : [0, 0];
+        const gamesA = scoreA.reduce((sum, val) => sum + (isNaN(val) ? 0 : val), 0);
+        const gamesB = scoreB.reduce((sum, val) => sum + (isNaN(val) ? 0 : val), 0);
+
+        const players = [m.player_a1_id, m.player_a2_id, m.player_b1_id, m.player_b2_id];
+        
+        players.forEach(pid => {
+          if (leaderboardMap[pid]) {
+            leaderboardMap[pid].matchesPlayed += 1;
+            const isTeamA = pid === m.player_a1_id || pid === m.player_a2_id;
+            const won = (isTeamA && resObj.winner_team === 'A') || (!isTeamA && resObj.winner_team === 'B');
+            
+            if (won) {
+              leaderboardMap[pid].wins += 1;
+            } else if (resObj.winner_team !== 'draw') {
+              leaderboardMap[pid].losses += 1;
+            }
+
+            if (isTeamA) {
+              leaderboardMap[pid].gamesWon += gamesA;
+              leaderboardMap[pid].gamesLost += gamesB;
+            } else {
+              leaderboardMap[pid].gamesWon += gamesB;
+              leaderboardMap[pid].gamesLost += gamesA;
+            }
+          }
+        });
+      }
+    });
+
+    return Object.values(leaderboardMap).sort((a, b) => {
+      if (b.wins !== a.wins) return b.wins - a.wins;
+      const diffA = a.gamesWon - a.gamesLost;
+      const diffB = b.gamesWon - b.gamesLost;
+      if (diffB !== diffA) return diffB - diffA;
+      return b.elo - a.elo;
+    });
+  };
+
+  const leaderboard = getQuedadaLeaderboard();
+  const userRankIndex = leaderboard.findIndex(p => p.user_id === user?.id);
+  const userRank = userRankIndex >= 0 ? userRankIndex + 1 : null;
+
   // Agrupar partidos por ronda
   const matchesByRound = (quedada.matches || []).reduce((acc, m) => {
     if (!acc[m.round_number]) acc[m.round_number] = []
@@ -87,7 +210,16 @@ export default function QuedadaDetail() {
         <div className="flex flex-col sm:flex-row justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <span className={`level-${quedada.level} capitalize`}>{quedada.level}</span>
+              <span className={`level-${quedada.level} capitalize`}>{levelLabels[quedada.level] || quedada.level}</span>
+              <span className={`gender-${quedada.gender_restriction} text-xs px-2 py-0.5 rounded-full font-semibold border ${
+                quedada.gender_restriction === 'mixto'
+                  ? 'bg-slate-800 text-slate-300 border-slate-700'
+                  : quedada.gender_restriction === 'hombres'
+                  ? 'bg-blue-950/40 text-blue-400 border-blue-900/50'
+                  : 'bg-pink-950/40 text-pink-400 border-pink-900/50'
+              }`}>
+                {quedada.gender_restriction === 'mixto' ? 'Mixto ⚤' : quedada.gender_restriction === 'hombres' ? 'Hombres ♂' : 'Mujeres ♀'}
+              </span>
               <span className={`status-${quedada.status} capitalize`}>{quedada.status}</span>
               {quedada.track_global_history && (
                 <span className="badge badge-blue">Sin repetir histórico</span>
@@ -106,13 +238,22 @@ export default function QuedadaDetail() {
             </div>
           </div>
           <div className="flex flex-col gap-2 min-w-fit">
-            {(isCreator || isAdmin) && quedada.status !== 'generated' && activeParts.length >= 8 && (
+            {user?.role !== 'jugador' && (isCreator || isAdmin) && quedada.status !== 'generated' && activeParts.length >= 8 && (
               <button onClick={handleGenerate} disabled={generating} className="btn-primary">
                 {generating ? '⏳ Generando...' : '🎲 Generar emparejamientos'}
               </button>
             )}
-            {isJoined && quedada.status === 'open' && (
+            {user?.role !== 'jugador' && isJoined && quedada.status === 'open' && (
               <button onClick={handleLeave} className="btn-danger text-sm">Abandonar quedada</button>
+            )}
+            {user?.role !== 'jugador' && (isCreator || isAdmin) && (
+              <button
+                onClick={handleDeleteQuedada}
+                disabled={deletingQuedada}
+                className="btn-danger text-sm border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-red-400"
+              >
+                {deletingQuedada ? 'Eliminando...' : '🗑️ Eliminar quedada'}
+              </button>
             )}
           </div>
         </div>
@@ -131,12 +272,21 @@ export default function QuedadaDetail() {
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-semibold text-slate-200 truncate">{p.user?.name}</div>
                     <div className="flex items-center gap-1 mt-0.5">
-                      <span className={`level-${p.user?.level} text-[10px]`}>{p.user?.level}</span>
+                      <span className={`level-${p.user?.level} text-[10px]`}>{levelLabels[p.user?.level] || p.user?.level}</span>
                       <span className="text-xs text-slate-500">ELO {p.user?.elo_rating}</span>
                     </div>
                   </div>
                   {quedada.creator_id === p.user_id && (
-                    <span className="text-xs text-yellow-400">👑</span>
+                    <span className="text-xs text-yellow-400 mr-2">👑</span>
+                  )}
+                  {user?.role !== 'jugador' && (isCreator || isAdmin) && quedada.status === 'open' && (
+                    <button
+                      onClick={() => handleRemoveParticipant(p.user_id)}
+                      className="text-red-400 hover:text-red-300 text-xs px-1.5 py-0.5 rounded hover:bg-red-500/10 transition-colors ml-2"
+                      title="Eliminar jugador"
+                    >
+                      ❌
+                    </button>
                   )}
                 </div>
               ))}
@@ -147,7 +297,67 @@ export default function QuedadaDetail() {
                 </div>
               )}
             </div>
+
+            {/* Añadir participante manualmente */}
+            {user?.role !== 'jugador' && (isCreator || isAdmin) && quedada.status === 'open' && activeParts.length < quedada.max_players && (
+              <form onSubmit={handleAddParticipant} className="space-y-3 pt-4 border-t border-slate-700/30 mt-4">
+                <div className="text-sm font-semibold text-slate-300">Añadir jugador (Manual)</div>
+                <input
+                  type="text"
+                  className="input text-sm"
+                  placeholder="Teléfono del jugador"
+                  value={newParticipantPhone}
+                  onChange={e => setNewParticipantPhone(e.target.value)}
+                  disabled={addingParticipant}
+                  required
+                />
+                <button type="submit" disabled={addingParticipant} className="btn-primary w-full text-sm">
+                  {addingParticipant ? 'Añadiendo...' : 'Añadir jugador'}
+                </button>
+              </form>
+            )}
           </div>
+
+          {/* Clasificación de la Jornada */}
+          {(quedada.status === 'generated' || quedada.status === 'completed') && leaderboard.length > 0 && (
+            <div className="card mt-6 border border-slate-700/50">
+              <h2 className="font-semibold text-slate-200 mb-4 flex items-center gap-2">🏆 Clasificación de la Jornada</h2>
+              {userRank && (
+                <div className="bg-brand-500/10 border border-brand-500/30 text-brand-400 rounded-xl p-3 mb-4 text-center text-sm font-semibold">
+                  🎉 ¡Has quedado en el puesto #{userRank} de la quedada!
+                </div>
+              )}
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-700/50 text-slate-400">
+                      <th className="py-2 pr-2">Pos</th>
+                      <th className="py-2">Jugador</th>
+                      <th className="py-2 text-center">PG</th>
+                      <th className="py-2 text-center">DG</th>
+                      <th className="py-2 text-right">ELO</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {leaderboard.map((item, idx) => (
+                      <tr 
+                        key={item.user_id} 
+                        className={`border-b border-slate-700/30 last:border-0 ${item.user_id === user?.id ? 'bg-brand-500/10 text-brand-400 font-bold' : 'text-slate-300'}`}
+                      >
+                        <td className="py-2 pr-2 font-mono">#{idx + 1}</td>
+                        <td className="py-2 truncate max-w-[100px]">{item.name}</td>
+                        <td className="py-2 text-center font-semibold">{item.wins}</td>
+                        <td className={`py-2 text-center font-mono ${item.gamesWon - item.gamesLost > 0 ? 'text-green-400' : item.gamesWon - item.gamesLost < 0 ? 'text-red-400' : 'text-slate-400'}`}>
+                          {item.gamesWon - item.gamesLost > 0 ? `+${item.gamesWon - item.gamesLost}` : item.gamesWon - item.gamesLost}
+                        </td>
+                        <td className="py-2 text-right font-mono text-slate-400">{item.elo}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Partidos/Rondas */}
@@ -168,7 +378,7 @@ export default function QuedadaDetail() {
                     {matches.map(m => (
                       <div key={m.id} className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/20">
                         <div className="flex items-center justify-between text-xs text-slate-500 mb-3">
-                          <span>🏟️ Cancha {m.court_number}</span>
+                          <span>🏟️ {m.court?.name || `Cancha ${m.court_number}`}</span>
                           <span className={`badge ${m.status === 'confirmed' ? 'badge-green' : m.status === 'result_reported' ? 'badge-yellow' : 'badge-gray'}`}>
                             {m.status === 'confirmed' ? '✅ Confirmado' : m.status === 'result_reported' ? '⏳ Pendiente' : '⏰ Pendiente'}
                           </span>

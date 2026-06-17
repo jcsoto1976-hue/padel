@@ -9,27 +9,35 @@ export default function Dashboard() {
   const [myReservations, setMyReservations] = useState([])
   const [loading, setLoading] = useState(true)
 
+  const levelLabels = {
+    '6ta_A': '6ª A',
+    '6ta_B': '6ª B',
+    '5ta_A': '5ª A',
+    '5ta_B': '5ª B',
+    '4ta_A': '4ª A',
+    '4ta_B': '4ª B',
+    '3ra_A': '3ª A',
+    '3ra_B': '3ª B',
+    'mixto': 'Mixto'
+  }
+
   useEffect(() => {
     const fetchData = async () => {
       try {
+        const isAdmin = user?.role === 'admin'
         const [qRes, rRes] = await Promise.all([
           api.get('/quedadas?status=open'),
-          api.get('/reservations/my'),
+          isAdmin ? api.get('/reservations/my') : Promise.resolve({ data: { reservations: [] } }),
         ])
         setQuedadas(qRes.data.quedadas?.slice(0, 3) || [])
         setMyReservations(rRes.data.reservations?.slice(0, 3) || [])
       } catch { /* silencioso */ }
       finally { setLoading(false) }
     }
-    fetchData()
-  }, [])
-
-  const levelColors = {
-    iniciacion: 'level-iniciacion',
-    intermedio: 'level-intermedio',
-    avanzado: 'level-avanzado',
-    elite: 'level-elite',
-  }
+    if (user) {
+      fetchData()
+    }
+  }, [user])
 
   if (loading) {
     return (
@@ -40,6 +48,14 @@ export default function Dashboard() {
       </div>
     )
   }
+
+  const isAdmin = user?.role === 'admin'
+  const quickActions = [
+    ...(isAdmin ? [{ to: '/reservas', icon: '📅', label: 'Reservar pista', color: 'from-blue-500/10 to-cyan-500/10 border-blue-500/20 hover:border-blue-500/40' }] : []),
+    { to: '/quedadas', icon: '🎾', label: 'Unirse a quedada', color: 'from-brand-500/10 to-emerald-500/10 border-brand-500/20 hover:border-brand-500/40' },
+    { to: '/ranking', icon: '📊', label: 'Ver ranking', color: 'from-yellow-500/10 to-orange-500/10 border-yellow-500/20 hover:border-yellow-500/40' },
+    { to: '/torneos', icon: '🏆', label: 'Torneos', color: 'from-purple-500/10 to-pink-500/10 border-purple-500/20 hover:border-purple-500/40' },
+  ]
 
   return (
     <div className="pt-24 pb-16 px-6 max-w-7xl mx-auto animate-fade-in">
@@ -57,11 +73,11 @@ export default function Dashboard() {
           { icon: '📈', label: 'ELO Rating', value: user?.elo_rating || 1000, sub: 'puntos', color: 'text-brand-400' },
           { icon: '🎾', label: 'Partidos jugados', value: user?.total_matches || 0, sub: 'en total', color: 'text-blue-400' },
           { icon: '🏆', label: 'Victorias', value: user?.total_wins || 0, sub: `${user?.total_matches > 0 ? Math.round((user.total_wins / user.total_matches) * 100) : 0}% win rate`, color: 'text-yellow-400' },
-          { icon: '⭐', label: 'Nivel', value: user?.level, sub: 'actual', color: 'text-orange-400' },
+          { icon: '⭐', label: 'Nivel', value: levelLabels[user?.level] || user?.level, sub: 'actual', color: 'text-orange-400' },
         ].map(({ icon, label, value, sub, color }) => (
           <div key={label} className="card-hover">
             <div className="text-2xl mb-2">{icon}</div>
-            <div className={`font-display font-black text-2xl ${color} capitalize`}>{value}</div>
+            <div className={`font-display font-black text-2xl ${color}`}>{value}</div>
             <div className="text-xs text-slate-400 mt-0.5">{label}</div>
             <div className="text-xs text-slate-600 mt-0.5">{sub}</div>
           </div>
@@ -70,7 +86,7 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Próximas quedadas */}
-        <div>
+        <div className={isAdmin ? 'lg:col-span-1' : 'lg:col-span-2'}>
           <div className="flex items-center justify-between mb-4">
             <h2 className="section-title">Quedadas abiertas</h2>
             <Link to="/quedadas" className="btn-ghost text-sm">Ver todas →</Link>
@@ -91,7 +107,9 @@ export default function Dashboard() {
                       <div className="flex items-center gap-2 mt-1.5">
                         <span className="text-xs text-slate-500">📅 {q.date}</span>
                         <span className="text-xs text-slate-500">🕐 {q.start_time?.slice(0,5)}</span>
-                        <span className={`level-${q.level} capitalize`}>{q.level}</span>
+                        <span className={`level-${q.level} text-xs px-2 py-0.5 rounded-full font-semibold bg-slate-800 text-slate-300 border border-slate-700`}>
+                          {levelLabels[q.level] || q.level}
+                        </span>
                       </div>
                     </div>
                     <div className="text-right">
@@ -115,50 +133,47 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Mis reservas */}
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="section-title">Mis reservas</h2>
-            <Link to="/reservas" className="btn-ghost text-sm">Ver calendario →</Link>
-          </div>
-          <div className="space-y-3">
-            {myReservations.length === 0 ? (
-              <div className="card text-center py-8">
-                <div className="text-3xl mb-2">📅</div>
-                <p className="text-slate-400 text-sm">No tienes reservas próximas</p>
-                <Link to="/reservas" className="btn-primary mt-4 text-sm">Reservar pista</Link>
-              </div>
-            ) : myReservations.map(r => (
-              <div key={r.id} className="glass border border-slate-700/30 rounded-xl p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-semibold text-slate-200 text-sm">{r.court?.name}</div>
-                    <div className="text-xs text-slate-500 mt-1">
-                      {new Date(r.start_datetime).toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' })}
-                      {' · '}
-                      {new Date(r.start_datetime).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
-                      {' – '}
-                      {new Date(r.end_datetime).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
-                    </div>
-                  </div>
-                  <span className={r.status === 'active' ? 'badge-green' : 'badge-gray'}>
-                    {r.status === 'active' ? 'Activa' : 'Completada'}
-                  </span>
+        {/* Mis reservas (solo visible para admin) */}
+        {isAdmin && (
+          <div className="lg:col-span-1">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="section-title">Mis reservas</h2>
+              <Link to="/reservas" className="btn-ghost text-sm">Ver calendario →</Link>
+            </div>
+            <div className="space-y-3">
+              {myReservations.length === 0 ? (
+                <div className="card text-center py-8">
+                  <div className="text-3xl mb-2">📅</div>
+                  <p className="text-slate-400 text-sm">No tienes reservas próximas</p>
+                  <Link to="/reservas" className="btn-primary mt-4 text-sm">Reservar pista</Link>
                 </div>
-              </div>
-            ))}
+              ) : myReservations.map(r => (
+                <div key={r.id} className="glass border border-slate-700/30 rounded-xl p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="font-semibold text-slate-200 text-sm">{r.court?.name}</div>
+                      <div className="text-xs text-slate-500 mt-1">
+                        {new Date(r.start_datetime).toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' })}
+                        {' · '}
+                        {new Date(r.start_datetime).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+                        {' – '}
+                        {new Date(r.end_datetime).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                    </div>
+                    <span className={r.status === 'active' ? 'badge-green' : 'badge-gray'}>
+                      {r.status === 'active' ? 'Activa' : 'Completada'}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Quick actions */}
-      <div className="mt-10 grid grid-cols-2 md:grid-cols-4 gap-4">
-        {[
-          { to: '/reservas', icon: '📅', label: 'Reservar pista', color: 'from-blue-500/10 to-cyan-500/10 border-blue-500/20 hover:border-blue-500/40' },
-          { to: '/quedadas', icon: '🎾', label: 'Unirse a quedada', color: 'from-brand-500/10 to-emerald-500/10 border-brand-500/20 hover:border-brand-500/40' },
-          { to: '/ranking', icon: '📊', label: 'Ver ranking', color: 'from-yellow-500/10 to-orange-500/10 border-yellow-500/20 hover:border-yellow-500/40' },
-          { to: '/torneos', icon: '🏆', label: 'Torneos', color: 'from-purple-500/10 to-pink-500/10 border-purple-500/20 hover:border-purple-500/40' },
-        ].map(({ to, icon, label, color }) => (
+      <div className={`mt-10 grid gap-4 grid-cols-2 md:grid-cols-${quickActions.length}`}>
+        {quickActions.map(({ to, icon, label, color }) => (
           <Link key={to} to={to}>
             <div className={`glass bg-gradient-to-br ${color} border rounded-2xl p-5 text-center hover:-translate-y-1 transition-all duration-200 cursor-pointer`}>
               <div className="text-3xl mb-2">{icon}</div>

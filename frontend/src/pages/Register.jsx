@@ -4,17 +4,21 @@ import { useAuth } from '../context/AuthContext'
 import toast from 'react-hot-toast'
 
 const LEVELS = [
-  { value: 'iniciacion', label: 'Iniciación', desc: 'Aprendo a jugar' },
-  { value: 'intermedio', label: 'Intermedio', desc: 'Juego regularmente' },
-  { value: 'avanzado', label: 'Avanzado', desc: 'Compito en torneos' },
-  { value: 'elite', label: 'Élite', desc: 'Alto nivel competitivo' },
+  { value: '6ta_B', label: '6ª B', desc: 'Categoría Inicial B' },
+  { value: '6ta_A', label: '6ª A', desc: 'Categoría Inicial A' },
+  { value: '5ta_B', label: '5ª B', desc: 'Categoría Quinta B' },
+  { value: '5ta_A', label: '5ª A', desc: 'Categoría Quinta A' },
+  { value: '4ta_B', label: '4ª B', desc: 'Categoría Cuarta B' },
+  { value: '4ta_A', label: '4ª A', desc: 'Categoría Cuarta A' },
+  { value: '3ra_B', label: '3ª B', desc: 'Categoría Tercera B' },
+  { value: '3ra_A', label: '3ª A', desc: 'Categoría Tercera A' },
 ]
 
 export default function Register() {
   const { register } = useAuth()
   const navigate = useNavigate()
   const [form, setForm] = useState({
-    name: '', email: '', password: '', confirm: '', level: 'intermedio', phone: '',
+    name: '', level: '6ta_B', phone: '', gender: '',
   })
   const [loading, setLoading] = useState(false)
 
@@ -22,17 +26,13 @@ export default function Register() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (form.password !== form.confirm) {
-      toast.error('Las contraseñas no coinciden')
-      return
-    }
-    if (form.password.length < 8) {
-      toast.error('La contraseña debe tener al menos 8 caracteres')
+    if (!form.gender) {
+      toast.error('Por favor, selecciona tu género ♂/♀')
       return
     }
     setLoading(true)
     try {
-      await register({ name: form.name, email: form.email, password: form.password, level: form.level, phone: form.phone })
+      await register({ name: form.name, password: form.phone, level: form.level, phone: form.phone, gender: form.gender })
       toast.success('¡Cuenta creada! Bienvenido al club 🎾')
       navigate('/dashboard')
     } catch (err) {
@@ -62,28 +62,38 @@ export default function Register() {
                   placeholder="Tu nombre" className="input" required />
               </div>
               <div>
-                <label htmlFor="phone" className="label">Teléfono <span className="text-slate-500">(opcional)</span></label>
+                <label htmlFor="phone" className="label">Teléfono</label>
                 <input id="phone" name="phone" type="tel" value={form.phone} onChange={handleChange}
-                  placeholder="+34 600 000 000" className="input" />
+                  placeholder="+34 600 000 000" className="input" required />
               </div>
             </div>
 
+            {/* Selector de género */}
             <div>
-              <label htmlFor="reg-email" className="label">Email</label>
-              <input id="reg-email" name="email" type="email" value={form.email} onChange={handleChange}
-                placeholder="tu@email.com" className="input" required autoComplete="email" />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="reg-password" className="label">Contraseña</label>
-                <input id="reg-password" name="password" type="password" value={form.password} onChange={handleChange}
-                  placeholder="Mínimo 8 caracteres" className="input" required autoComplete="new-password" />
-              </div>
-              <div>
-                <label htmlFor="confirm" className="label">Confirmar contraseña</label>
-                <input id="confirm" name="confirm" type="password" value={form.confirm} onChange={handleChange}
-                  placeholder="Repite la contraseña" className="input" required />
+              <label className="label">Género</label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setForm(prev => ({ ...prev, gender: 'H' }))}
+                  className={`p-3 rounded-xl border text-center font-semibold transition-all duration-200 ${
+                    form.gender === 'H'
+                      ? 'border-brand-500/60 bg-brand-500/10 text-white'
+                      : 'border-slate-700/50 hover:border-slate-600 text-slate-400'
+                  }`}
+                >
+                  Hombre ♂
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setForm(prev => ({ ...prev, gender: 'M' }))}
+                  className={`p-3 rounded-xl border text-center font-semibold transition-all duration-200 ${
+                    form.gender === 'M'
+                      ? 'border-brand-500/60 bg-brand-500/10 text-white'
+                      : 'border-slate-700/50 hover:border-slate-600 text-slate-400'
+                  }`}
+                >
+                  Mujer ♀
+                </button>
               </div>
             </div>
 

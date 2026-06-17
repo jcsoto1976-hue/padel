@@ -8,6 +8,7 @@ const FORMAT_LABELS = {
   eliminacion_directa: 'Eliminación directa',
   liguilla: 'Liguilla',
   combinado: 'Combinado',
+  americano: 'Americano',
 }
 
 const STATUS_LABELS = {
@@ -16,6 +17,18 @@ const STATUS_LABELS = {
   in_progress: '🔵 En curso',
   completed: '✅ Finalizado',
   cancelled: '❌ Cancelado',
+}
+
+const levelLabels = {
+  '6ta_A': '6ª A',
+  '6ta_B': '6ª B',
+  '5ta_A': '5ª A',
+  '5ta_B': '5ª B',
+  '4ta_A': '4ª A',
+  '4ta_B': '4ª B',
+  '3ra_A': '3ª A',
+  '3ra_B': '3ª B',
+  'mixto': 'Mixto'
 }
 
 export default function Torneos() {
@@ -75,7 +88,18 @@ export default function Torneos() {
 
                   <div className="flex items-start justify-between mb-3">
                     <span className="text-xs text-slate-500">{STATUS_LABELS[t.status]}</span>
-                    <span className={`level-${t.level} capitalize`}>{t.level}</span>
+                    <div className="flex items-center gap-1.5 animate-fade-in">
+                      <span className={`gender-${t.gender_restriction} text-[10px] px-2 py-0.5 rounded-full font-semibold border ${
+                        t.gender_restriction === 'mixto'
+                          ? 'bg-slate-800/80 text-slate-300 border-slate-700/60'
+                          : t.gender_restriction === 'hombres'
+                          ? 'bg-blue-950/40 text-blue-400 border-blue-900/50'
+                          : 'bg-pink-950/40 text-pink-400 border-pink-900/50'
+                      }`}>
+                        {t.gender_restriction === 'mixto' ? 'Mixto ⚤' : t.gender_restriction === 'hombres' ? 'Hombres ♂' : 'Mujeres ♀'}
+                      </span>
+                      <span className={`level-${t.level}`}>{levelLabels[t.level] || t.level}</span>
+                    </div>
                   </div>
 
                   <h3 className="font-display font-bold text-lg text-white mb-1 hover:text-brand-300 transition-colors">

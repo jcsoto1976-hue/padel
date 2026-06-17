@@ -4,7 +4,18 @@ import { useAuth } from '../context/AuthContext'
 import api from '../services/api'
 import toast from 'react-hot-toast'
 
-const LEVELS = ['mixto', 'iniciacion', 'intermedio', 'avanzado', 'elite']
+const LEVELS = ['mixto', '6ta_A', '6ta_B', '5ta_A', '5ta_B', '4ta_A', '4ta_B', '3ra_A', '3ra_B']
+const levelLabels = {
+  '6ta_A': '6ª A',
+  '6ta_B': '6ª B',
+  '5ta_A': '5ª A',
+  '5ta_B': '5ª B',
+  '4ta_A': '4ª A',
+  '4ta_B': '4ª B',
+  '3ra_A': '3ª A',
+  '3ra_B': '3ª B',
+  'mixto': 'Mixto'
+}
 
 export default function Quedadas() {
   const { user } = useAuth()
@@ -12,9 +23,11 @@ export default function Quedadas() {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('open')
   const [showCreate, setShowCreate] = useState(false)
+  const [courts, setCourts] = useState([])
+  const [selectedCourts, setSelectedCourts] = useState([])
   const [form, setForm] = useState({
     title: '', description: '', level: 'mixto', date: '', start_time: '10:00',
-    num_courts: 2, max_players: 8, track_global_history: false,
+    track_global_history: false, gender_restriction: 'mixto',
   })
 
   const fetchQuedadas = async () => {
@@ -28,13 +41,36 @@ export default function Quedadas() {
 
   useEffect(() => { fetchQuedadas() }, [filter])
 
+  useEffect(() => {
+    api.get('/courts')
+      .then(({ data }) => setCourts(data.courts || []))
+      .catch(() => toast.error('Error al cargar pistas'))
+  }, [])
+
+  const handleCourtToggle = (courtId) => {
+    setSelectedCourts(prev =>
+      prev.includes(courtId)
+        ? prev.filter(id => id !== courtId)
+        : [...prev, courtId]
+    )
+  }
+
   const handleCreate = async (e) => {
     e.preventDefault()
+    if (selectedCourts.length < 2 || selectedCourts.length > 5) {
+      toast.error('Debes seleccionar entre 2 y 5 pistas para la quedada')
+      return
+    }
     try {
-      await api.post('/quedadas', { ...form, num_courts: Number(form.num_courts), max_players: Number(form.max_players) })
+      await api.post('/quedadas', {
+        ...form,
+        selected_courts: selectedCourts,
+        max_players: selectedCourts.length * 4
+      })
       toast.success('¡Quedada creada! 🎾')
       setShowCreate(false)
-      setForm({ title: '', description: '', level: 'mixto', date: '', start_time: '10:00', num_courts: 2, max_players: 8, track_global_history: false })
+      setForm({ title: '', description: '', level: 'mixto', date: '', start_time: '10:00', track_global_history: false, gender_restriction: 'mixto' })
+      setSelectedCourts([])
       fetchQuedadas()
     } catch (err) {
       toast.error(err.response?.data?.error || 'Error al crear quedada')
@@ -60,9 +96,11 @@ export default function Quedadas() {
           <h1 className="section-title text-3xl">🎾 Quedadas</h1>
           <p className="section-subtitle">Únete a una quedada o crea la tuya con emparejamiento automático</p>
         </div>
-        <button onClick={() => setShowCreate(!showCreate)} className="btn-primary">
-          + Nueva quedada
-        </button>
+        {user?.role !== 'jugador' && (
+          <button onClick={() => setShowCreate(!showCreate)} className="btn-primary">
+            + Nueva quedada
+          </button>
+        )}
       </div>
 
       {/* Formulario crear */}
@@ -93,31 +131,57 @@ export default function Quedadas() {
                 onChange={e => setForm(p => ({ ...p, start_time: e.target.value }))}
               />
             </div>
-            <div>
-              <label className="label">Nivel</label>
-              <select className="input" value={form.level} onChange={e => setForm(p => ({ ...p, level: e.target.value }))}>
-                {LEVELS.map(l => <option key={l} value={l}>{l.charAt(0).toUpperCase() + l.slice(1)}</option>)}
-              </select>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:col-span-2">
+              <div>
+                <label className="label">Nivel</label>
+                <select className="input" value={form.level} onChange={e => setForm(p => ({ ...p, level: e.target.value }))}>
+                  {LEVELS.map(l => <option key={l} value={l}>{levelLabels[l] || l}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="label">¿Es una quedada mixta o por género? *</label>
+                <select className="input" value={form.gender_restriction} onChange={e => setForm(p => ({ ...p, gender_restriction: e.target.value }))}>
+                  <option value="mixto">Sí, es Mixta (Parejas siempre Hombre + Mujer) ⚤</option>
+                  <option value="hombres">No, Solo Hombres ♂</option>
+                  <option value="mujeres">No, Solo Mujeres ♀</option>
+                </select>
+              </div>
             </div>
-            <div>
-              <label className="label">Número de canchas (2-5)</label>
-              <select className="input" value={form.num_courts} onChange={e => setForm(p => ({ ...p, num_courts: Number(e.target.value) }))}>
-                {[2,3,4,5].map(n => <option key={n} value={n}>{n} canchas</option>)}
-              </select>
+            <div className="md:col-span-2">
+              <label className="label">Pistas Reservadas para la Quedada *</label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-800/40 p-4 rounded-xl border border-slate-700/30">
+                {courts.map(court => (
+                  <div key={court.id} className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id={`court-${court.id}`}
+                      checked={selectedCourts.includes(court.id)}
+                      onChange={() => handleCourtToggle(court.id)}
+                      className="w-4 h-4 accent-brand-500"
+                    />
+                    <label htmlFor={`court-${court.id}`} className="text-sm text-slate-300 cursor-pointer select-none">
+                      {court.name} <span className="text-xs text-slate-500 font-normal">({court.is_indoor ? 'Indoor' : 'Exterior'})</span>
+                    </label>
+                  </div>
+                ))}
+              </div>
+              {selectedCourts.length > 0 ? (
+                <div className="text-xs text-brand-400 font-semibold mt-2">
+                  📢 Al seleccionar {selectedCourts.length} {selectedCourts.length === 1 ? 'pista' : 'pistas'}, la quedada será para {selectedCourts.length * 4} jugadores.
+                </div>
+              ) : (
+                <div className="text-xs text-slate-500 mt-2">
+                  Debes seleccionar entre 2 y 5 pistas.
+                </div>
+              )}
             </div>
-            <div>
-              <label className="label">Máximo jugadores</label>
-              <select className="input" value={form.max_players} onChange={e => setForm(p => ({ ...p, max_players: Number(e.target.value) }))}>
-                {[8,12,16,20].map(n => <option key={n} value={n}>{n} jugadores</option>)}
-              </select>
-            </div>
-            <div className="flex items-center gap-3">
+            <div className="md:col-span-2 flex items-center gap-3">
               <input type="checkbox" id="track" checked={form.track_global_history}
                 onChange={e => setForm(p => ({ ...p, track_global_history: e.target.checked }))}
                 className="w-4 h-4 accent-brand-500"
               />
               <label htmlFor="track" className="text-sm text-slate-300 cursor-pointer">
-                Evitar repeticiones entre sesiones
+                Evitar repeticiones entre sesiones (Algoritmo inteligente para jugadores recurrentes)
               </label>
             </div>
             <div className="md:col-span-2">
@@ -196,7 +260,16 @@ export default function Quedadas() {
                     <span>🏟️ {q.num_courts} canchas</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className={`level-${q.level} capitalize`}>{q.level}</span>
+                    <span className={`level-${q.level}`}>{levelLabels[q.level] || q.level}</span>
+                    <span className={`gender-${q.gender_restriction} text-[10px] px-2 py-0.5 rounded-full font-semibold border ${
+                      q.gender_restriction === 'mixto'
+                        ? 'bg-slate-800/80 text-slate-300 border-slate-700/60'
+                        : q.gender_restriction === 'hombres'
+                        ? 'bg-blue-950/40 text-blue-400 border-blue-900/50'
+                        : 'bg-pink-950/40 text-pink-400 border-pink-900/50'
+                    }`}>
+                      {q.gender_restriction === 'mixto' ? 'Mixto ⚤' : q.gender_restriction === 'hombres' ? 'Hombres ♂' : 'Mujeres ♀'}
+                    </span>
                     {q.track_global_history && (
                       <span className="badge badge-blue text-xs">Sin repetir</span>
                     )}
@@ -230,7 +303,7 @@ export default function Quedadas() {
                 </div>
 
                 {/* Acción */}
-                {q.status === 'open' && !isJoined && (
+                {q.status === 'open' && !isJoined && user?.role !== 'jugador' && (
                   <button onClick={() => handleJoin(q.id)} className="btn-primary w-full text-sm">
                     Unirse →
                   </button>
@@ -240,7 +313,7 @@ export default function Quedadas() {
                     Ver detalles ✓
                   </Link>
                 )}
-                {q.status !== 'open' && !isJoined && (
+                {((q.status === 'open' && !isJoined && user?.role === 'jugador') || (q.status !== 'open' && !isJoined)) && (
                   <Link to={`/quedadas/${q.id}`} className="btn-secondary w-full text-sm block text-center">
                     Ver detalles
                   </Link>

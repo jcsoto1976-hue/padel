@@ -152,11 +152,11 @@ body {
   .table td { @apply px-4 py-3.5; }
 
   /* Level badge */
-  .level-iniciacion { @apply badge bg-slate-500/20 text-slate-300; }
-  .level-intermedio  { @apply badge bg-blue-500/20 text-blue-300; }
-  .level-avanzado    { @apply badge bg-orange-500/20 text-orange-300; }
-  .level-elite       { @apply badge bg-yellow-500/20 text-yellow-300; }
-  .level-mixto       { @apply badge bg-purple-500/20 text-purple-300; }
+  .level-6ta_A, .level-6ta_B { @apply badge bg-slate-500/20 text-slate-300; }
+  .level-5ta_A, .level-5ta_B { @apply badge bg-blue-500/20 text-blue-300; }
+  .level-4ta_A, .level-4ta_B { @apply badge bg-orange-500/20 text-orange-300; }
+  .level-3ra_A, .level-3ra_B { @apply badge bg-emerald-500/20 text-emerald-300; }
+  .level-mixto               { @apply badge bg-purple-500/20 text-purple-300; }
 
   /* Status badge */
   .status-open       { @apply badge-green; }

@@ -15,10 +15,10 @@ if (process.env.DATABASE_URL && (process.env.DATABASE_URL.startsWith('postgres:/
         require: true,
         rejectUnauthorized: false, // Requerido por proveedores como Supabase
       },
-      // Resolver DNS forzando IPv4 (family 4) para evitar fallos ENETUNREACH de IPv6 en Render
-      lookup: (hostname, options, callback) => {
+      // Resolver DNS forzando IPv4 solo en Render (evita fallos ENETUNREACH de IPv6 en Render)
+      lookup: process.env.RENDER ? (hostname, options, callback) => {
         require('dns').lookup(hostname, Object.assign({}, options, { family: 4 }), callback);
-      },
+      } : undefined,
     },
     logging: process.env.NODE_ENV === 'development' ? console.log : false,
     timezone: '+01:00',
@@ -55,10 +55,10 @@ if (process.env.DATABASE_URL && (process.env.DATABASE_URL.startsWith('postgres:/
             require: true,
             rejectUnauthorized: false,
           },
-          // Resolver DNS forzando IPv4 (family 4) para evitar fallos ENETUNREACH de IPv6 en Render
-          lookup: (hostname, options, callback) => {
+          // Resolver DNS forzando IPv4 solo en Render (evita fallos ENETUNREACH de IPv6 en Render)
+          lookup: process.env.RENDER ? (hostname, options, callback) => {
             require('dns').lookup(hostname, Object.assign({}, options, { family: 4 }), callback);
-          },
+          } : undefined,
         },
         logging: process.env.NODE_ENV === 'development' ? console.log : false,
         timezone: '+01:00',
