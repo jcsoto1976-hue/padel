@@ -6,7 +6,7 @@ const Tournament = sequelize.define('Tournament', {
   name: { type: DataTypes.STRING(120), allowNull: false },
   description: { type: DataTypes.TEXT, allowNull: true },
   format: {
-    type: DataTypes.ENUM('eliminacion_directa', 'liguilla', 'combinado', 'americano'),
+    type: DataTypes.ENUM('eliminacion_directa', 'liguilla', 'combinado', 'americano', 'americano_fijo'),
     defaultValue: 'eliminacion_directa',
   },
   level: {

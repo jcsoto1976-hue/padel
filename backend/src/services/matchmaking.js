@@ -267,4 +267,49 @@ function ejemplosAlgoritmo() {
   });
 }
 
-module.exports = { generar_emparejamientos_dobles, ejemplosAlgoritmo, pairKey };
+/**
+ * Genera rondas para un Americano de Parejas Fijas (Round Robin por parejas)
+ * agrupando partidos concurrentemente en las canchas disponibles, sin repetir rivales.
+ */
+function generar_emparejamientos_fijos(parejas, num_canchas) {
+  const n = parejas.length;
+  const p = [...parejas];
+  if (n % 2 !== 0) p.push('BYE');
+  
+  const numPares = p.length;
+  const rondasTotales = numPares - 1;
+  const partidosPorRonda = numPares / 2;
+  
+  const rondas = [];
+  
+  for (let i = 0; i < rondasTotales; i++) {
+    const partidos = [];
+    let canchaAsignada = 1;
+    
+    for (let j = 0; j < partidosPorRonda; j++) {
+      if (canchaAsignada > num_canchas) break;
+      
+      const a = p[j];
+      const b = p[numPares - 1 - j];
+      
+      if (a !== 'BYE' && b !== 'BYE') {
+        partidos.push({
+          cancha: canchaAsignada++,
+          pairA: a,
+          pairB: b
+        });
+      }
+    }
+    
+    if (partidos.length > 0) {
+      rondas.push({ numero: i + 1, partidos });
+    }
+    
+    // Rotar array (mantener p[0] fijo, rotar el resto a la derecha)
+    p.splice(1, 0, p.pop());
+  }
+  
+  return rondas;
+}
+
+module.exports = { generar_emparejamientos_dobles, generar_emparejamientos_fijos, ejemplosAlgoritmo, pairKey };

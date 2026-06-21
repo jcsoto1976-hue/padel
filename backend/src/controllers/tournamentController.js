@@ -1,7 +1,7 @@
 const { Tournament, TournamentPair, TournamentMatch, User, EloHistory, Match, MatchResult, Court, Season } = require('../models');
 const { asyncHandler } = require('../middleware/errorHandler');
 const { calcularEloDobles } = require('../services/elo');
-const { generar_emparejamientos_dobles } = require('../services/matchmaking');
+const { generar_emparejamientos_dobles, generar_emparejamientos_fijos } = require('../services/matchmaking');
 
 /**
  * GET /api/tournaments
@@ -300,6 +300,40 @@ exports.generateBracket = asyncHandler(async (req, res) => {
       message: 'Emparejamientos americano generados',
       matches_created: matchesCreated.length,
       resultado,
+    });
+  }
+
+  // ─── Formato Americano Fijo: Round Robin por parejas ──────────────────
+  if (tournament.format === 'americano_fijo') {
+    if (pairs.length < 2) return res.status(400).json({ error: 'Se necesitan al menos 2 parejas' });
+
+    const numCourts = tournament.selected_courts ? tournament.selected_courts.length : Math.floor(pairs.length / 2);
+    const rondasResult = generar_emparejamientos_fijos(pairs, numCourts);
+
+    for (const ronda of rondasResult) {
+      for (const partido of ronda.partidos) {
+        const courtId = tournament.selected_courts && tournament.selected_courts[partido.cancha - 1]
+          ? tournament.selected_courts[partido.cancha - 1]
+          : null;
+
+        const m = await TournamentMatch.create({
+          tournament_id: tournament.id,
+          pair_a_id: partido.pairA.id,
+          pair_b_id: partido.pairB.id,
+          round: ronda.numero,
+          match_number: partido.cancha,
+          court_id: courtId,
+        });
+        matches.push(m);
+      }
+    }
+
+    await tournament.update({ status: 'in_progress' });
+
+    return res.json({
+      message: 'Cuadro americano fijo generado',
+      matches_created: matches.length,
+      matches,
     });
   }
 

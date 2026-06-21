@@ -124,8 +124,9 @@ export default function AdminNewTournament() {
                 className="input"
               >
                 <option value="eliminacion_directa">Eliminación Directa</option>
-                <option value="liguilla">Liguilla (Todos contra todos)</option>
+                <option value="combinado">Combinado (Grupos + Eliminación)</option>
                 <option value="americano">Americano (Parejas no fijas)</option>
+                <option value="americano_fijo">Americano (Parejas fijas)</option>
               </select>
             </div>
             <div>
@@ -200,9 +201,9 @@ export default function AdminNewTournament() {
             </div>
             {selectedCourts.length > 0 && (
               <div className="text-xs text-brand-400 font-semibold mt-2">
-                {form.format === 'americano'
-                  ? `📢 Al seleccionar ${selectedCourts.length} ${selectedCourts.length === 1 ? 'cancha' : 'canchas'}, el torneo admitirá un máximo de ${selectedCourts.length * 4} jugadores (parejas no fijas, se mezclan cada ronda).`
-                  : `📢 Al seleccionar ${selectedCourts.length} ${selectedCourts.length === 1 ? 'cancha' : 'canchas'}, el torneo admitirá un máximo de ${selectedCourts.length * 2} parejas (${selectedCourts.length * 4} jugadores).`
+                {form.format === 'americano' || form.format === 'americano_fijo'
+                  ? `Se abrirán ${selectedCourts.length * (form.format === 'americano' ? 4 : 2)} plazas individuales.`
+                  : `Se generará un cuadro para ${selectedCourts.length * 2} parejas.`
                 }
               </div>
             )}

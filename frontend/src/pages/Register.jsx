@@ -26,6 +26,10 @@ export default function Register() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    if (!/^\d{10}$/.test(form.phone)) {
+      toast.error('El teléfono debe tener exactamente 10 números')
+      return
+    }
     if (!form.gender) {
       toast.error('Por favor, selecciona tu género ♂/♀')
       return
@@ -63,8 +67,9 @@ export default function Register() {
               </div>
               <div>
                 <label htmlFor="phone" className="label">Teléfono</label>
-                <input id="phone" name="phone" type="tel" value={form.phone} onChange={handleChange}
-                  placeholder="+34 600 000 000" className="input" required />
+                <input id="phone" name="phone" type="tel" value={form.phone} onChange={handleChange} 
+                  pattern="\d{10}" maxLength={10} minLength={10}
+                  className="input" placeholder="Ej: 0991234567" required />
               </div>
             </div>
 

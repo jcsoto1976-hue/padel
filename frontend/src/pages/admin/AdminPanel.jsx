@@ -50,8 +50,12 @@ function AdminOverview() {
     }
   }
 
-  const handleCreateUser = async (e) => {
+  const handleUserSubmit = async (e) => {
     e.preventDefault()
+    if (!/^\d{10}$/.test(form.phone)) {
+      toast.error('El teléfono debe tener exactamente 10 números')
+      return
+    }
     setSubmitting(true)
     try {
       const { data } = await api.post('/admin/users', form)
@@ -147,7 +151,7 @@ function AdminOverview() {
           <div className="bg-slate-900 border border-slate-800 w-full max-w-md rounded-2xl p-6 shadow-2xl relative animate-scale-in">
             <h3 className="text-lg font-bold text-white mb-4">➕ Registrar Nuevo Usuario</h3>
             
-            <form onSubmit={handleCreateUser} className="space-y-4">
+            <form onSubmit={handleUserSubmit} className="space-y-4">
               <div>
                 <label className="label text-xs">Nombre Completo</label>
                 <input
@@ -163,10 +167,11 @@ function AdminOverview() {
               <div>
                 <label className="label text-xs">Teléfono / Usuario de Acceso</label>
                 <input
-                  type="text"
+                  type="tel"
                   required
-                  placeholder="Ej. 600000021"
-                  className="input text-sm"
+                  pattern="\d{10}" maxLength={10} minLength={10}
+                  className="input"
+                  placeholder="Ej: 0991234567"
                   value={form.phone}
                   onChange={e => setForm(p => ({ ...p, phone: e.target.value }))}
                 />

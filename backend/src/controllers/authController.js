@@ -38,6 +38,10 @@ exports.register = asyncHandler(async (req, res) => {
   if (!name || !phone) {
     return res.status(400).json({ error: 'Nombre y teléfono son obligatorios' });
   }
+
+  if (!/^\d{10}$/.test(phone)) {
+    return res.status(400).json({ error: 'El teléfono debe tener exactamente 10 dígitos numéricos' });
+  }
   if (registrationPassword.length < 3) {
     return res.status(400).json({ error: 'La contraseña debe tener al menos 3 caracteres' });
   }
@@ -74,7 +78,11 @@ exports.login = asyncHandler(async (req, res) => {
   const { phone, password } = req.body;
 
   if (!phone || !password) {
-    return res.status(400).json({ error: 'Teléfono y contraseña son obligatorios' });
+    return res.status(400).json({ error: 'Teléfono y contraseña obligatorios' });
+  }
+
+  if (!/^\d{10}$/.test(phone)) {
+    return res.status(400).json({ error: 'El teléfono debe tener exactamente 10 dígitos numéricos' });
   }
 
   const user = await User.findOne({ where: { phone } });

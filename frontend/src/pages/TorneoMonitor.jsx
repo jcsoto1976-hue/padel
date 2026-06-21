@@ -305,7 +305,7 @@ export default function TorneoMonitor() {
             <h1 className="font-display text-xl md:text-2xl font-black text-white flex items-center gap-2">
               🏆 {torneo.name}
               <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-brand-500/10 text-brand-400 border border-brand-500/20">
-                {isAmericano ? 'Americano' : 'Clásico'}
+                {isAmericano ? 'Americano' : torneo.format === 'americano_fijo' ? 'Americano Fijo' : 'Clásico'}
               </span>
             </h1>
             <p className="text-xs text-slate-400 mt-0.5">Monitor Oficial de Resultados en Tiempo Real</p>

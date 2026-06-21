@@ -232,7 +232,7 @@ export default function TorneoDetail() {
             {torneo.description && <p className="text-slate-400 text-sm mt-2">{torneo.description}</p>}
             <div className="flex flex-wrap gap-3 mt-3 text-sm text-slate-400">
               <span>📅 {new Date(torneo.start_date).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
-              <span>📋 {torneo.format === 'americano' ? 'Americano (parejas no fijas)' : torneo.format?.replace(/_/g, ' ')}</span>
+              <span>📋 {torneo.format === 'americano' ? 'Americano (parejas no fijas)' : torneo.format === 'americano_fijo' ? 'Americano (Parejas fijas)' : torneo.format?.replace(/_/g, ' ')}</span>
               {isAmericano ? (
                 <span>👥 {torneo.pairs?.length}/{torneo.max_pairs} jugadores</span>
               ) : (
@@ -271,7 +271,7 @@ export default function TorneoDetail() {
             )}
             {isAdmin && torneo.status === 'open' && (
               <button onClick={handleGenerateBracket} className="btn-primary">
-                🎲 {isAmericano ? 'Generar emparejamientos' : 'Generar cuadro'}
+                🎲 {isAmericano || torneo.format === 'americano_fijo' ? 'Generar emparejamientos' : 'Generar cuadro'}
               </button>
             )}
           </div>
