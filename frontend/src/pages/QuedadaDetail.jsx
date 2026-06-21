@@ -246,7 +246,7 @@ export default function QuedadaDetail() {
             {user?.role !== 'jugador' && isJoined && quedada.status === 'open' && (
               <button onClick={handleLeave} className="btn-danger text-sm">Abandonar quedada</button>
             )}
-            {user?.role !== 'jugador' && (isCreator || isAdmin) && (
+            {user?.role !== 'jugador' && (isCreator || isAdmin) && quedada.status !== 'generated' && (
               <button
                 onClick={handleDeleteQuedada}
                 disabled={deletingQuedada}

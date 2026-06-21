@@ -13,6 +13,7 @@ router.get('/', authenticate, ctrl.getTournaments);
 router.post('/', authenticate, requireAdmin, ctrl.createTournament);
 router.put('/:id/status', authenticate, requireAdmin, ctrl.updateTournamentStatus);
 router.get('/:id', authenticate, ctrl.getTournament);
+router.delete('/:id', authenticate, requireAdmin, ctrl.deleteTournament);
 router.post('/:id/pairs', authenticate, requireAdminOrCoach, ctrl.registerPair);
 router.post('/:id/generate', authenticate, requireAdmin, ctrl.generateBracket);
 router.put('/:id/matches/:matchId/result', authenticate, requireAdmin, ctrl.setMatchResult);

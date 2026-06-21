@@ -123,6 +123,21 @@ exports.updateTournamentStatus = asyncHandler(async (req, res) => {
 });
 
 /**
+ * DELETE /api/tournaments/:id — Borrar torneo
+ */
+exports.deleteTournament = asyncHandler(async (req, res) => {
+  const tournament = await Tournament.findByPk(req.params.id);
+  if (!tournament) return res.status(404).json({ error: 'Torneo no encontrado' });
+
+  if (tournament.status !== 'open' && tournament.status !== 'draft') {
+    return res.status(400).json({ error: 'No se puede eliminar un torneo que ya ha generado emparejamientos' });
+  }
+
+  await tournament.destroy();
+  res.json({ message: 'Torneo eliminado correctamente' });
+});
+
+/**
  * POST /api/tournaments/:id/pairs — Inscribir pareja o jugador individual (americano)
  */
 exports.registerPair = asyncHandler(async (req, res) => {

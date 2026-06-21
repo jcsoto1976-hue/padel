@@ -315,6 +315,10 @@ exports.deleteQuedada = asyncHandler(async (req, res) => {
     return res.status(403).json({ error: 'Solo el creador o admin puede borrar la quedada' });
   }
 
+  if (quedada.status === 'generated' || quedada.status === 'completed') {
+    return res.status(400).json({ error: 'No se puede eliminar una quedada que ya ha generado emparejamientos' });
+  }
+
   await quedada.destroy();
   res.json({ message: 'Quedada eliminada correctamente' });
 });

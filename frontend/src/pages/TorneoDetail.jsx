@@ -114,6 +114,17 @@ export default function TorneoDetail() {
     }
   }
 
+  const handleDeleteTournament = async () => {
+    if (!confirm('¿Seguro que quieres eliminar por completo este torneo?')) return
+    try {
+      await api.delete(`/tournaments/${id}`)
+      toast.success('Torneo eliminado')
+      window.location.href = '/torneos'
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Error al eliminar torneo')
+    }
+  }
+
   if (loading) return (
     <div className="pt-24 px-6 max-w-5xl mx-auto">
       <div className="skeleton h-48 rounded-2xl mb-6" />
@@ -272,6 +283,14 @@ export default function TorneoDetail() {
             {isAdmin && torneo.status === 'open' && (
               <button onClick={handleGenerateBracket} className="btn-primary">
                 🎲 {isAmericano || torneo.format === 'americano_fijo' ? 'Generar emparejamientos' : 'Generar cuadro'}
+              </button>
+            )}
+            {isAdmin && (torneo.status === 'open' || torneo.status === 'draft') && (
+              <button
+                onClick={handleDeleteTournament}
+                className="btn-danger text-sm border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-red-400"
+              >
+                🗑️ Eliminar torneo
               </button>
             )}
           </div>
