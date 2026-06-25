@@ -13,10 +13,6 @@ export default function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!/^\d{10}$/.test(form.phone)) {
-      toast.error('El teléfono debe tener exactamente 10 números')
-      return
-    }
     setLoading(true)
     try {
       await login(form.phone, form.password)
@@ -49,14 +45,13 @@ export default function Login() {
               <input
                 id="phone"
                 name="phone"
-                type="tel"
+                type="text"
                 value={form.phone}
                 onChange={handleChange}
-                pattern="\d{10}" maxLength={10} minLength={10}
-                placeholder="Ej: 0991234567"
+                placeholder="Teléfono o usuario"
                 className="input"
                 required
-                autoComplete="tel"
+                autoComplete="username"
               />
             </div>
 

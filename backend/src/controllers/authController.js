@@ -81,10 +81,6 @@ exports.login = asyncHandler(async (req, res) => {
     return res.status(400).json({ error: 'Teléfono y contraseña obligatorios' });
   }
 
-  if (!/^\d{10}$/.test(phone)) {
-    return res.status(400).json({ error: 'El teléfono debe tener exactamente 10 dígitos numéricos' });
-  }
-
   const user = await User.findOne({ where: { phone } });
   if (!user || !user.is_active) {
     return res.status(401).json({ error: 'Credenciales inválidas' });
